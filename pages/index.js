@@ -17,7 +17,7 @@ export default function Home() {
   }, [])
   async function loadNFTs() {
     /* create a generic provider and query for unsold market items */
-    const provider = new ethers.providers.JsonRpcProvider()
+    const provider = new ethers.providers.JsonRpcProvider("https://rpc-mumbai.matic.today")
     const contract = new ethers.Contract(marketplaceAddress, NFTMarketplace.abi, provider)
     const data = await contract.fetchMarketItems()
 
@@ -27,7 +27,7 @@ export default function Home() {
     */
     const items = await Promise.all(data.map(async i => {
       const tokenUri = await contract.tokenURI(i.tokenId)
-      const meta = await axios.get(tokenUri)
+      const meta = await axios.get(tokenUri, {withCredentials: false})
       let price = ethers.utils.formatUnits(i.price.toString(), 'ether')
       let item = {
         price,
