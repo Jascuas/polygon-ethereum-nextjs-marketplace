@@ -12,9 +12,12 @@ contract NFTMarketplace is ERC721URIStorage {
     Counters.Counter private _tokenIds;
     Counters.Counter private _itemsSold;
 
+    // amount to pay to list the nft
     uint256 listingPrice = 0.025 ether;
+    
     address payable owner;
 
+    //a way to access values of the MarketItem struct above by passing an integer ID
     mapping(uint256 => MarketItem) private idToMarketItem;
 
     struct MarketItem {
@@ -43,7 +46,7 @@ contract NFTMarketplace is ERC721URIStorage {
       listingPrice = _listingPrice;
     }
 
-    /* Returns the listing price of the contract */
+    /// @notice function to get listingprice
     function getListingPrice() public view returns (uint256) {
       return listingPrice;
     }
@@ -59,6 +62,7 @@ contract NFTMarketplace is ERC721URIStorage {
       return newTokenId;
     }
 
+    /// @notice function to create market item
     function createMarketItem(
       uint256 tokenId,
       uint256 price
@@ -77,8 +81,8 @@ contract NFTMarketplace is ERC721URIStorage {
       _transfer(msg.sender, address(this), tokenId);
       emit MarketItemCreated(
         tokenId,
-        msg.sender,
-        address(this),
+        msg.sender, //address of the seller putting the nft up for sale
+        address(this), // owner contract
         price,
         false
       );
@@ -97,21 +101,20 @@ contract NFTMarketplace is ERC721URIStorage {
       _transfer(msg.sender, address(this), tokenId);
     }
 
-    /* Creates the sale of a marketplace item */
-    /* Transfers ownership of the item, as well as funds between parties */
+    /// @notice function to create a sale
     function createMarketSale(
       uint256 tokenId
       ) public payable {
       uint price = idToMarketItem[tokenId].price;
       address seller = idToMarketItem[tokenId].seller;
       require(msg.value == price, "Please submit the asking price in order to complete the purchase");
-      idToMarketItem[tokenId].owner = payable(msg.sender);
-      idToMarketItem[tokenId].sold = true;
-      idToMarketItem[tokenId].seller = payable(address(0));
-      _itemsSold.increment();
-      _transfer(address(this), msg.sender, tokenId);
-      payable(owner).transfer(listingPrice);
-      payable(seller).transfer(msg.value);
+      idToMarketItem[tokenId].owner = payable(msg.sender); //mark buyer as new owner
+      idToMarketItem[tokenId].sold = true; //mark that it has been sold
+      idToMarketItem[tokenId].seller = payable(address(0)); // no seller yet ( set seller to empty address )
+      _itemsSold.increment(); //increment the total number of Items sold by 1
+      _transfer(address(this), msg.sender, tokenId); //transfer ownership of the nft from the contract itself to the buyer
+      payable(owner).transfer(listingPrice); //pay owner of contract the listing price
+      payable(seller).transfer(msg.value); //pay the seller the amount
     }
 
     /* Returns all unsold market items */

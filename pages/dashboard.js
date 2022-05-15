@@ -1,7 +1,7 @@
 import { ethers } from 'ethers'
 import { useEffect, useState } from 'react'
 import axios from 'axios'
-import Web3Modal from 'web3modal'
+import detectEthereumProvider from '@metamask/detect-provider';
 
 import {
   marketplaceAddress
@@ -9,24 +9,86 @@ import {
 
 import NFTMarketplace from '../artifacts/contracts/NFTMarketplace.sol/NFTMarketplace.json'
 
+
+const createEthereumState = ({ ethereum, provider, contract, isLoading }) => {
+  return {
+    ethereum,
+    provider,
+    contract,
+    isLoading,
+  }
+}
+
 export default function CreatorDashboard() {
   const [nfts, setNfts] = useState([])
-  const [loadingState, setLoadingState] = useState('not-loaded')
+  const [account, setAccount] = useState()
+  const [ethereumApi, setEthereumApi] = useState(createEthereumState({
+    provider: null,
+    ethereum: null,
+    contract: null,
+    isLoading: true
+  }));
+
   useEffect(() => {
-    loadNFTs()
-  }, [])
-  async function loadNFTs() {
-    const web3Modal = new Web3Modal({
-      network: 'mainnet',
-      cacheProvider: true,
-    })
-    const connection = await web3Modal.connect()
-    const provider = new ethers.providers.Web3Provider(connection)
-    const signer = provider.getSigner()
+    loadProvider().catch(console.error)
+  }, [account])
 
-    const contract = new ethers.Contract(marketplaceAddress, NFTMarketplace.abi, signer)
+  const loadProvider = async () => {
+    const provider = await detectEthereumProvider()
+
+    if (provider) {
+      const ethereum = new ethers.providers.Web3Provider(provider)
+      const network = await ethereum.getNetwork();
+      console.log("Network chain id=", network.chainId);
+      ethereum.listAccounts().then(handleAccountsChanged)
+      const contract = []
+
+      if(account) {
+        const signer = await ethereum.getSigner()
+        contract = new ethers.Contract(marketplaceAddress, NFTMarketplace.abi, signer)
+        loadNFTs(contract)
+      }
+
+      setEthereumApi(createEthereumState({
+        ethereum,
+        provider,
+        contract,
+        isLoading: false
+      }))
+
+      setListeners(provider)
+    } else {
+      setEthereumApi((api) => ({ ...api, isLoading: false }))
+      // if the provider is not detected, detectEthereumProvider resolves to null
+      console.log('Please install MetaMask!');
+    }
+
+  }
+
+  const setListeners = provider => {
+    provider.on("chainChanged", _ => window.location.reload())
+    provider.on('accountsChanged', handleAccountsChanged)
+
+  }
+
+  function handleAccountsChanged(accounts) {
+    if (accounts.length === 0) {
+      setAccount()
+    } else if (accounts[0] !== account) {
+      setAccount(accounts[0])
+    }
+  }
+
+  const connect = async () => {
+    try {
+      await window.ethereum.request({ method: "eth_requestAccounts" })
+    } catch (error) {
+      //location.reload()
+      console.error(error)
+    }
+  }
+  async function loadNFTs(contract) {
     const data = await contract.fetchItemsListed()
-
     const items = await Promise.all(data.map(async i => {
       const tokenUri = await contract.tokenURI(i.tokenId)
       const meta = await axios.get(tokenUri)
@@ -40,28 +102,36 @@ export default function CreatorDashboard() {
       }
       return item
     }))
-
     setNfts(items)
-    setLoadingState('loaded') 
+    setEthereumApi((api) => ({ ...api, isLoading: false }))
   }
-  if (loadingState === 'loaded' && !nfts.length) return (<h1 className="py-10 px-20 text-3xl">No NFTs listed</h1>)
-  return (
-    <div>
-      <div className="p-4">
-        <h2 className="text-2xl py-2">Items Listed</h2>
+
+  if (!ethereumApi.isLoading && !ethereumApi.ethereum) return (<h1 className="py-10 px-20 text-3xl">INSTALL METAMASK</h1>)
+  if (!ethereumApi.isLoading && !account) return (
+    <div className="flex justify-center">
+      <h1 className="mt-4  px-20 text-3xl">You are not connected yet!</h1>
+      <button className="mt-4  bg-pink-500 text-white font-bold  px-12 rounded" onClick={() => connect()}>Connect</button>
+    </div>)
+  else {
+    return (
+      <div>
+        <div className="p-4">
+          <h2 className="text-2xl py-2">Items Listed</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-4">
-          {
-            nfts.map((nft, i) => (
-              <div key={i} className="border shadow rounded-xl overflow-hidden">
-                <img src={nft.image} className="rounded" />
-                <div className="p-4 bg-black">
-                  <p className="text-2xl font-bold text-white">Price - {nft.price} Eth</p>
+            {
+              nfts.map((nft, i) => (
+                <div key={i} className="border shadow rounded-xl overflow-hidden">
+                  <img src={nft.image} className="rounded" />
+                  <div className="p-4 bg-black">
+                    <p className="text-2xl font-bold text-white">Price - {nft.price} Eth</p>
+                  </div>
                 </div>
-              </div>
-            ))
-          }
+              ))
+            }
+          </div>
         </div>
       </div>
-    </div>
-  )
+    )
+  }
+
 }
