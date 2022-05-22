@@ -18,10 +18,14 @@ const createEthereumState = ({ ethereum, provider, contract, isLoading }) => {
     isLoading,
   }
 }
+const NETWORKS = {
+  80001: "Mumbai Test Network - 80001",
+}
 
 export default function CreatorDashboard() {
   const [nfts, setNfts] = useState([])
   const [account, setAccount] = useState()
+  const [chainId, setChainId] = useState()
   const [ethereumApi, setEthereumApi] = useState(createEthereumState({
     provider: null,
     ethereum: null,
@@ -39,11 +43,11 @@ export default function CreatorDashboard() {
     if (provider) {
       const ethereum = new ethers.providers.Web3Provider(provider)
       const network = await ethereum.getNetwork();
-      console.log("Network chain id=", network.chainId);
+      setChainId(network.chainId)
       ethereum.listAccounts().then(handleAccountsChanged)
       const contract = []
 
-      if(account) {
+      if(account && NETWORKS[network.chainId]) {
         const signer = await ethereum.getSigner()
         contract = new ethers.Contract(marketplaceAddress, NFTMarketplace.abi, signer)
         loadNFTs(contract)
@@ -111,6 +115,10 @@ export default function CreatorDashboard() {
     <div className="flex justify-center">
       <h1 className="mt-4  px-20 text-3xl">You are not connected yet!</h1>
       <button className="mt-4  bg-pink-500 text-white font-bold  px-12 rounded" onClick={() => connect()}>Connect</button>
+    </div>)
+  if (!ethereumApi.isLoading && !NETWORKS[chainId]) return (
+    <div className="flex justify-center">
+      <h1 className="mt-4  px-20 text-3xl">You need to connect to {NETWORKS[80001]}</h1>
     </div>)
   else {
     return (
