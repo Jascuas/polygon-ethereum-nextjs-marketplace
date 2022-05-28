@@ -4,8 +4,9 @@ import Button from '../button'
 export default function NavBar() {
     return (
         <nav className="border-b p-6">
-            <p className="text-4xl font-bold">Metaverse Marketplace</p>
+            
             <div className="flex mt-4 align-middle">
+            <p className="text-2xl font-bold mr-10 leading-normal">Metaverse Marketplace</p>
                 <div className='grow self-center'>
                 <ActiveLink href="/">
                     <a className="mr-4 text-pink-500 hover:text-pink-900">
@@ -29,7 +30,7 @@ export default function NavBar() {
                 </ActiveLink >
                 </div>
                 <div className=" flex-none">
-                    <Button size='sm' variant='lightPink'>
+                    <Button size='md' variant='pink'>
                         Connect
                     </Button>
                 </div>
