@@ -2,12 +2,8 @@ import { ethers } from 'ethers'
 import { useEffect, useState } from 'react'
 import axios from 'axios'
 import detectEthereumProvider from '@metamask/detect-provider';
-
-import {
-  marketplaceAddress
-} from '../config'
-
-import NFTMarketplace from '../artifacts/contracts/NFTMarketplace.sol/NFTMarketplace.json'
+import NFTCard from '../Components/NFTCard'
+import { loadContract } from '../utils/loadContrat';
 
 
 const createEthereumState = ({ ethereum, provider, contract, isLoading }) => {
@@ -45,11 +41,11 @@ export default function CreatorDashboard() {
       const network = await ethereum.getNetwork();
       setChainId(network.chainId)
       ethereum.listAccounts().then(handleAccountsChanged)
-      const contract = []
+      let contract = []
 
       if(account && NETWORKS[network.chainId]) {
         const signer = await ethereum.getSigner()
-        contract = new ethers.Contract(marketplaceAddress, NFTMarketplace.abi, signer)
+        contract = loadContract(signer, ethers)
         loadNFTs(contract)
       }
 
@@ -114,7 +110,6 @@ export default function CreatorDashboard() {
   if (!ethereumApi.isLoading && !account) return (
     <div className="flex justify-center">
       <h1 className="mt-4  px-20 text-3xl">You are not connected yet!</h1>
-      <button className="mt-4  bg-pink-500 text-white font-bold  px-12 rounded" onClick={() => connect()}>Connect</button>
     </div>)
   if (!ethereumApi.isLoading && !NETWORKS[chainId]) return (
     <div className="flex justify-center">
@@ -127,13 +122,8 @@ export default function CreatorDashboard() {
           <h2 className="text-2xl py-2">Items Listed</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-4">
             {
-              nfts.map((nft, i) => (
-                <div key={i} className="border shadow rounded-xl overflow-hidden">
-                  <img src={nft.image} className="rounded" />
-                  <div className="p-4 bg-black">
-                    <p className="text-2xl font-bold text-white">Price - {nft.price} Eth</p>
-                  </div>
-                </div>
+              nfts.map((nft) => (
+                <NFTCard nft={nft}/>
               ))
             }
           </div>
