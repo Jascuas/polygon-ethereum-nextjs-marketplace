@@ -1,7 +1,6 @@
 
 
 export default function NFTCard({nft}) {
-    console.log(nft)
     return (
         <div key={nft.image} className="border shadow rounded-xl overflow-hidden">
             <img src={nft.image} className="rounded" />

@@ -8,7 +8,7 @@ export default function Button({
     children,
     className,
     size = "md",
-    variant = "purple",
+    variant = "pink",
     ...rest
 }) {
     const sizeClass = SIZES[size]

@@ -5,6 +5,8 @@ import detectEthereumProvider from '@metamask/detect-provider';
 import NFTCard from '../Components/NFTCard'
 import { loadContract } from '../utils/loadContrat';
 
+import { useWeb3 } from '../Hooks/useWeb3';
+
 
 const createEthereumState = ({ ethereum, provider, contract, isLoading }) => {
   return {
@@ -17,6 +19,7 @@ const createEthereumState = ({ ethereum, provider, contract, isLoading }) => {
 const NETWORKS = {
   80001: "Mumbai Test Network - 80001",
 }
+
 
 export default function CreatorDashboard() {
   const [nfts, setNfts] = useState([])
@@ -43,7 +46,7 @@ export default function CreatorDashboard() {
       ethereum.listAccounts().then(handleAccountsChanged)
       let contract = []
 
-      if(account && NETWORKS[network.chainId]) {
+      if (account && NETWORKS[network.chainId]) {
         const signer = await ethereum.getSigner()
         contract = loadContract(signer, ethers)
         loadNFTs(contract)
@@ -76,15 +79,6 @@ export default function CreatorDashboard() {
       setAccount()
     } else if (accounts[0] !== account) {
       setAccount(accounts[0])
-    }
-  }
-
-  const connect = async () => {
-    try {
-      await window.ethereum.request({ method: "eth_requestAccounts" })
-    } catch (error) {
-      //location.reload()
-      console.error(error)
     }
   }
   async function loadNFTs(contract) {
@@ -123,7 +117,7 @@ export default function CreatorDashboard() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-4">
             {
               nfts.map((nft) => (
-                <NFTCard nft={nft}/>
+                <NFTCard nft={nft} />
               ))
             }
           </div>
